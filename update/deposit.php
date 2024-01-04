@@ -33,7 +33,11 @@ function showUI()
                             <form id="myForm">
                                 <div class="mb-3">
                                     <label for="group_id" class="form-label">Group ID</label>
-                                    <input type="text" class="form-control" id="group_id" placeholder="Isikan ID Group" required>
+                                    <!-- <input type="text" class="form-control" id="group_id" placeholder="Isikan ID Group" required> -->
+                                    <select name="group_id" id="group_id" class="form-select">
+                                        <option value="">Pilih Satu</option>
+                                    </select>
+
                                 </div>
                                 <div class="mb-3">
                                     <label for="tanggal" class="form-label">Tanggal</label>
@@ -49,7 +53,13 @@ function showUI()
                                 </div>
                                 <div class="mb-3">
                                     <label for="type" class="form-label">Type</label>
-                                    <input type="text" class="form-control" id="type" placeholder="Isikan Type" required>
+                                    <select class="form-control" id="type">
+                                        <option value="Cash">Cash</option>
+                                        <option value="Debit">Debit</option>
+                                        <option value="Credit">Credit</option>
+
+                                    </select>
+
                                 </div>
                                 <div class="mb-3">
                                     <label for="card_number" class="form-label">Card Number</label>
@@ -94,6 +104,32 @@ function showUI()
             </div>
         </div>
         <script>
+            $(document).ready(function() {
+                $.get("optionsocc.php?flag=group_id",
+                    function(data, group_id) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#group_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+                $.get("optionsocc.php?flag=guest_id",
+                    function(data, guest_id) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#guest_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+                $.get("optionsocc.php?flag=voucher_id",
+                    function(data, voucher_id) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#voucher_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+            });
+        </script>
+
+        <script>
             var flag = "none";
 
             var table = $('#example').DataTable({
@@ -103,33 +139,40 @@ function showUI()
                     type: 'POST'
                 },
                 columns: [{
-                    data: "group_id"
-                }, {
-                    data: "tanggal"
-                }, {
-                    data: "dk_id"
-                }, {
-                    data: "amount"
-                }, {
-                    data: "type"
-                }, {
-                    data: "card_number"
-                }, {
-                    data: "expired_date"
-                }, {
-                    "orderable": false,
-                    "data": null,
-                    "defaultContent": "<button type=\"button\" class=\"btn btn-warning btn-sm\" id=\"edit\">Edit</button>"
-                }]
+                        data: "group_id"
+                    },
+                    {
+                        data: "tanggal"
+                    },
+                    {
+                        data: "dk_id"
+                    },
+                    {
+                        data: "amount"
+                    },
+                    {
+                        data: "type"
+                    },
+                    {
+                        data: "card_number"
+                    },
+                    {
+                        data: "expired_date"
+                    },
+                    {
+                        "orderable": false,
+                        "data": null,
+                        "defaultContent": "<button type=\"button\" class=\"btn btn-warning btn-sm\" id=\"edit\">Edit</button>&nbsp;<button type=\"button\" class=\"btn btn-danger btn-sm\" id=\"delete\">Delete</button>"
+                    }
+                ],
             });
 
-            var myModal = new bootstrap.Modal(document.getElementById('myForm'), {})
+            var myModal = new bootstrap.Modal(document.getElementById('myForm'), {});
 
             $('#add').click(function() {
                 flag = "add";
                 $('#myFormTitle').text("Tambah Data");
                 $('#group_id').val("");
-                $('#group_id').prop("disabled", false);
                 $('#tanggal').val("");
                 $('#dk_id').val("");
                 $('#amount').val("");
@@ -141,31 +184,20 @@ function showUI()
             });
 
             function postToServer(obj, callBack) {
-                $.post("?flag=" + flag,
-                    JSON.stringify(obj),
-                    function(data, status) {
+                $.ajax({
+                    url: '?flag=' + flag,
+                    type: 'POST',
+                    data: JSON.stringify(obj),
+                    contentType: 'application/json',
+                    success: function(data) {
                         if (data["status"] == 1) {
                             callBack();
                         } else {
                             $("#feedback").text(data["message"]);
                         }
                     }
-                );
-            }
-
-            //klik pada button save
-            $('#save').click(function() {
-                var formControl = document.getElementsByClassName("form-control");
-                var data = {};
-                for (var i = 0; i < formControl.length; i++) {
-                    data[formControl[i].id] = formControl[i].value;
-                }
-
-                postToServer(data, function() {
-                    $('#myForm').modal('hide');
-                    table.ajax.reload();
                 });
-            });
+            }
 
             function readFromServer(obj, callBack) {
                 $.post("?flag=read",
@@ -180,18 +212,52 @@ function showUI()
                 );
             }
 
-            //klik pada button edit
+            $('#save').click(function(e) {
+                e.preventDefault();
+
+                var data = {
+                    group_id: $('#group_id').val(),
+                    tanggal: $('#tanggal').val(),
+                    dk_id: $('#dk_id').val(),
+                    amount: $('#amount').val(),
+                    type: $('#type').val(),
+                    card_number: $('#card_number').val(),
+                    expired_date: $('#expired_date').val()
+                };
+
+                var flag = $('#group_id').prop('disabled') ? 'edit' : 'add';
+
+                $.ajax({
+                    url: '?flag=' + flag,
+                    type: 'POST',
+                    data: JSON.stringify(data),
+                    contentType: 'application/json',
+                    success: function(response) {
+                        if (response.status == 1) {
+                            // Retrieve the modal instance and hide it
+                            var myModal = bootstrap.Modal.getInstance(document.getElementById('myForm'));
+                            myModal.hide();
+                            table.ajax.reload();
+                        } else {
+                            $("#feedback").text(response.message);
+                        }
+                    }
+                });
+            });
+
+
+            // klik pada button edit
             table.on('click', '#edit', function(e) {
                 //ambil data dari baris yang diklik
                 var row = table.row(e.target.closest('tr')).data();
-                var group_id = row[0];
+                var group_id = row.group_id;
                 readFromServer({
                     "group_id": group_id
                 }, function(data) {
                     flag = "edit";
                     $('#myFormTitle').text("Edit Data");
                     $('#group_id').val(data["group_id"]);
-                    $('#group_id').prop("disabled", true);
+                    // $('#group_id').prop("disabled", true);
 
                     $('#tanggal').val(data["tanggal"]);
                     $('#dk_id').val(data["dk_id"]);
@@ -203,7 +269,33 @@ function showUI()
                     $('#myForm').modal('show');
                 });
             });
+
+            // klik pada button delete
+            table.on('click', '#delete', function(e) {
+                //ambil data dari baris yang diklik
+                var row = table.row(e.target.closest('tr')).data();
+                var group_id = row.group_id;
+
+                readFromServer({
+                    "group_id": group_id
+                }, function(data) {
+                    flag = "delete";
+                    $('#myFormTitle').text("Hapus Data");
+                    $('#group_id').val(data["group_id"]);
+                    $('#group_id').prop("disabled", true);
+                    $('#tanggal').val(data["tanggal"]);
+                    $('#dk_id').val(data["dk_id"]);
+                    $('#amount').val(data["amount"]);
+                    $('#type').val(data["type"]);
+                    $('#card_number').val(data["card_number"]);
+                    $('#expired_date').val(data["expired_date"]);
+                    $('#feedback').text("");
+                    $('#save').text("Delete record");
+                    myModal.show();
+                });
+            });
         </script>
+
     </body>
 
     </html>

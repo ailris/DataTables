@@ -36,11 +36,19 @@ function showUI()
                             </div>
                             <div class="mb-3">
                                 <label for="group_id" class="form-label">Group ID</label>
-                                <input type="text" class="form-control" id="group_id" placeholder="Isikan group id">
+                                <!-- <input type="text" class="form-control" id="group_id" placeholder="Isikan group id"> -->
+                                <select name="group_id" id="group_id" class="form-select">
+                                    <option value="">Pilih Satu</option>
+                                </select>
+
                             </div>
                             <div class="mb-3">
                                 <label for="room_id" class="form-label">Room ID</label>
-                                <input type="text" class="form-control" id="room_id" placeholder="Isikan room_id">
+                                <!-- <input type="text" class="form-control" id="room_id" placeholder="Isikan room_id"> -->
+                                <select name="room_id" id="room_id" class="form-select">
+                                    <option value="">Pilih Satu</option>
+                                </select>
+
                             </div>
                             <div class="mb-3">
                                 <label for="tanggal" class="form-label">Tanggal</label>
@@ -99,6 +107,24 @@ function showUI()
             </div>
         </div>
         <script>
+            $(document).ready(function() {
+                $.get("SelectOptions.php?flag=room_id",
+                    function(data, status_kamar) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#room_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+                $.get("SelectOptions.php?flag=group_id",
+                    function(data, status_kamar) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#group_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+            });
+        </script>
+        <script>
             var flag = "none";
 
             var table = $('#example').DataTable({
@@ -108,63 +134,79 @@ function showUI()
                     type: 'POST'
                 },
                 columns: [{
-                    data: "dk_id"
-                }, {
-                    data: "group_id"
-                }, {
-                    data: "room_id"
-                }, {
-                    data: "tanggal"
-                }, {
-                    data: "jenis"
-                }, {
-                    data: "keterangan"
-                }, {
-                    data: "amount"
-                }, {
-                    "orderable": false,
-                    "data": null,
-                    "defaultContent": "<button type=\"button\" class=\"btn btn-warning btn-sm\" id=\"edit\">Edit</button>"
-                }]
+                        data: 'dk_id'
+                    },
+                    {
+                        data: 'group_id'
+                    },
+                    {
+                        data: 'room_id'
+                    },
+                    {
+                        data: 'tanggal'
+                    },
+                    {
+                        data: 'jenis'
+                    },
+                    {
+                        data: 'keterangan'
+                    },
+                    {
+                        data: 'amount'
+                    },
+                    {
+                        "orderable": false,
+                        "data": null,
+                        "defaultContent": "<button type=\"button\" class=\"btn btn-warning btn-sm\" id=\"edit\">Edit</button>&nbsp;"
+                    }
+                ]
             });
 
-            var myModal = new bootstrap.Modal(document.getElementById('myForm'), {})
-
-            $('#add').click(function() {
+            $('#addRecord').click(function() {
                 flag = "add";
-                $('#myFormTitle').text("Tambah Data");
+                $('#myFormTitle').text("Add Record");
                 $('#dk_id').val("");
-                $('#dk_id').prop("disabled", false);
                 $('#group_id').val("");
                 $('#room_id').val("");
                 $('#tanggal').val("");
                 $('#jenis').val("");
                 $('#keterangan').val("");
                 $('#amount').val("");
+                $('#save').text("Save Changes");
                 $('#feedback').text("");
-                myModal.show();
+                $('#myForm').modal('show');
             });
 
             function postToServer(obj, callBack) {
-                $.post("?flag=" + flag,
-                    JSON.stringify(obj),
-                    function(data, status) {
+                $.ajax({
+                    url: '?flag=' + flag,
+                    type: 'POST',
+                    data: JSON.stringify(obj),
+                    contentType: 'application/json',
+                    success: function(data) {
                         if (data["status"] == 1) {
                             callBack();
                         } else {
                             $("#feedback").text(data["message"]);
                         }
                     }
-                );
+                });
             }
 
-            //klik pada button save
-            $('#save').click(function() {
-                var formControl = document.getElementsByClassName("form-control");
-                var data = {};
-                for (var i = 0; i < formControl.length; i++) {
-                    data[formControl[i].id] = formControl[i].value;
-                }
+            $('#save').click(function(e) {
+                e.preventDefault();
+
+                var data = {
+                    dk_id: $('#dk_id').val(),
+                    group_id: $('#group_id').val(),
+                    room_id: $('#room_id').val(),
+                    tanggal: $('#tanggal').val(),
+                    jenis: $('#jenis').val(),
+                    keterangan: $('#keterangan').val(),
+                    amount: $('#amount').val()
+                };
+
+                flag = $('#dk_id').prop('disabled') ? 'edit' : 'add';
 
                 postToServer(data, function() {
                     $('#myForm').modal('hide');
@@ -172,41 +214,36 @@ function showUI()
                 });
             });
 
-            function readFromServer(obj, callBack) {
-                $.post("?flag=read",
-                    JSON.stringify(obj),
-                    function(data, status) {
-                        if (data["status"] == 1) {
-                            callBack(data["data"]);
-                        } else {
-                            $("#feedback").text(data["message"]);
-                        }
-                    }
-                );
-            }
-
-            //klik pada button edit
             table.on('click', '#edit', function(e) {
-                //ambil data dari baris yang diklik
-                var row = table.row(e.target.closest('tr')).data();
-                var dk_id = row[0];
-                readFromServer({
-                    "dk_id": dk_id
-                }, function(data) {
-                    flag = "edit";
-                    $('#myFormTitle').text("Edit Data");
-                    $('#dk_id').val(data["dk_id"]);
-                    $('#dk_id').prop("disabled", true);
+                var data = table.row($(this).parents('tr')).data();
 
-                    $('#group_id').val(data["group_id"]);
-                    $('#room_id').val(data["room_id"]);
-                    $('#tanggal').val(data["tanggal"]);
-                    $('#jenis').val(data["jenis"]);
-                    $('#keterangan').val(data["keterangan"]);
-                    $('#amount').val(data["amount"]);
-                    $('#feedback').text("");
-                    $('#myForm').modal('show');
-                });
+                $('#myFormTitle').text("Edit Record");
+                $('#dk_id').val(data.dk_id).prop('disabled', true);
+                $('#group_id').val(data.group_id);
+                $('#room_id').val(data.room_id);
+                $('#tanggal').val(data.tanggal);
+                $('#jenis').val(data.jenis);
+                $('#keterangan').val(data.keterangan);
+                $('#amount').val(data.amount);
+                $('#feedback').text("");
+                $('#myForm').modal('show');
+            });
+
+            table.on('click', '#delete', function(e) {
+                var data = table.row($(this).parents('tr')).data();
+
+                flag = "delete";
+                $('#myFormTitle').text("Delete Record");
+                $('#dk_id').val(data.dk_id).prop('disabled', true);
+                $('#group_id').val(data.group_id);
+                $('#room_id').val(data.room_id);
+                $('#tanggal').val(data.tanggal);
+                $('#jenis').val(data.jenis);
+                $('#keterangan').val(data.keterangan);
+                $('#amount').val(data.amount);
+                $('#save').text("Delete Record");
+                $('#feedback').text("");
+                $('#myForm').modal('show');
             });
         </script>
     </body>

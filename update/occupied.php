@@ -4,18 +4,31 @@ include "../library.php";
 function showUI()
 {
 ?>
+    <?php
+    // Database connection
+    $con = mysqli_connect("localhost", "root", "", "hotel");
+
+    if ($con->connect_error) {
+        die("Connection failed: " . $con->connect_error);
+    }
+
+    // SQL query
+    $sql = "SELECT * FROM `rate`";
+    $result = $con->query($sql);
+    ?>
+
     <!DOCTYPE html>
     <html lang="en">
 
     <head>
         <title>Update Occupied</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="../bootstrap-5.3.2-dist/css/bootstrap.min.css" />
-        <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-        <script src="../bootstrap-5.3.2-dist/js/bootstrap.bundle.min.js"></script> <!-- Tambahkan ini -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="bootstrap-5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="bootstrap-5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="jquery/jquery-3.7.1.min.js"></script>
+        <link href="DataTables/datatables.min.css" rel="stylesheet">
+        <script src="DataTables/datatables.min.js"></script>
     </head>
 
     <body>
@@ -32,15 +45,26 @@ function showUI()
                         <div class="modal-body">
                             <div class="mb-3">
                                 <label for="room_id" class="form-label">Room ID</label>
-                                <input type="text" class="form-control" id="room_id" placeholder="Isikan Room ID">
+                                <!-- <input type="text" class="form-control" id="room_id" placeholder="Isikan Room ID"> -->
+                                <select name="room_id" id="room_id" class="form-select">
+                                    <option value="">Pilih Satu</option>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="guest_id" class="form-label">Guest ID</label>
-                                <input type="text" class="form-control" id="guest_id" placeholder="Isikan Guest ID">
+                                <!-- <input type="text" class="form-control" id="guest_id" placeholder="Isikan Guest ID"> -->
+                                <select name="guest_id" id="guest_id" class="form-select">
+                                    <option value="">Pilih Satu</option>
+                                </select>
+
                             </div>
                             <div class="mb-3">
                                 <label for="voucher_id" class="form-label">Voucher ID</label>
-                                <input type="text" class="form-control" id="voucher_id" placeholder="Isikan Voucher ID">
+                                <!-- <input type="text" class="form-control" id="voucher_id" placeholder="Isikan Voucher ID"> -->
+                                <select name="voucher_id" id="voucher_id" class="form-select">
+                                    <option value="">Pilih Satu</option>
+                                </select>
+
                             </div>
                             <div class="mb-3">
                                 <label for="dari_tanggal" class="form-label">Dari Tanggal</label>
@@ -105,6 +129,32 @@ function showUI()
             </div>
         </div>
         <script>
+            $(document).ready(function() {
+                $.get("optionsocc.php?flag=room_id",
+                    function(data, room_id) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#room_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+                $.get("optionsocc.php?flag=guest_id",
+                    function(data, guest_id) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#guest_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+                $.get("optionsocc.php?flag=voucher_id",
+                    function(data, voucher_id) {
+                        for (i = 0; i <= data.length; i++) {
+                            $('#voucher_id').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                        }
+                    }
+                );
+            });
+        </script>
+
+        <script>
             var flag = "none";
 
             var table = $('#example').DataTable({
@@ -146,22 +196,19 @@ function showUI()
 
             $('#add').click(function() {
                 flag = "add";
-                $('#myFormTitle').text("Tambah Data");
-                $('#occupied_id').val("");
-                $('#occupied_id').prop("disabled", false);
+                $('#myFormTitle').text("Add Data");
                 $('#room_id').val("");
                 $('#guest_id').val("");
                 $('#voucher_id').val("");
-                $('#dari_tanggal').val("");
+                $('#dari_tanggal').val(new Date().toISOString().slice(0, 10));
                 $('#sampai_tanggal').val("");
-                $('#ready_time').val("");
-                $('#checkin_time').val("");
-                $('#checkout_time').val("");
-                $('#rate').val("");
+                $('#rate').val("0");
                 $('#group_id').val("");
+                $('#save').text("Save change");
                 $('#feedback').text("");
-                myModal.show();
+                $('#myForm').modal('show');
             });
+
 
             function postToServer(obj, callBack) {
                 $.post("?flag=" + flag,
@@ -207,25 +254,21 @@ function showUI()
             table.on('click', '#edit', function(e) {
                 //ambil data dari baris yang diklik
                 var row = table.row(e.target.closest('tr')).data();
-                var occupied_id = row[0];
+                var occupied_id = row['occupied_id'];
                 readFromServer({
                     "occupied_id": occupied_id
                 }, function(data) {
                     flag = "edit";
                     $('#myFormTitle').text("Edit Data");
                     $('#occupied_id').val(data["occupied_id"]);
-                    $('#occupied_id').prop("disabled", true);
-
                     $('#room_id').val(data["room_id"]);
                     $('#guest_id').val(data["guest_id"]);
                     $('#voucher_id').val(data["voucher_id"]);
                     $('#dari_tanggal').val(data["dari_tanggal"]);
                     $('#sampai_tanggal').val(data["sampai_tanggal"]);
-                    $('#ready_time').val(data["ready_time"]);
-                    $('#checkin_time').val(data["checkin_time"]);
-                    $('#checkout_time').val(data["checkout_time"]);
                     $('#rate').val(data["rate"]);
                     $('#group_id').val(data["group_id"]);
+                    $('#save').text("Save change");
                     $('#feedback').text("");
                     $('#myForm').modal('show');
                 });
@@ -263,8 +306,10 @@ if (isset($_REQUEST["flag"])) {
             $con = openConnection();
             $body = file_get_contents('php://input');
             $data = json_decode($body, true);
-            $sql = "INSERT into occupied(occupied_id, room_id, guest_id, voucher_id, dari_tanggal, sampai_tanggal, ready_time, checkin_time, checkout_time, rate, group_id) VALUES (:occupied_id, :room_id, :guest_id, :voucher_id, :dari_tanggal, :sampai_tanggal, :ready_time, :checkin_time, :checkout_time, :rate, :group_id);";
-            createRow($con, $sql, $data);
+            $sql =
+                "INSERT INTO occupied (room_id, guest_id, voucher_id, dari_tanggal, sampai_tanggal, ready_time, checkin_time, checkout_time, rate, group_id) 
+VALUES (:room_id, :guest_id, :voucher_id, :dari_tanggal, :sampai_tanggal, :ready_time, :checkin_time, :checkout_time, :rate, :group_id);
+";
             $response["status"] = 1;
             $response["message"] = "Ok";
             $response["data"] = $data;
@@ -301,7 +346,19 @@ if (isset($_REQUEST["flag"])) {
             $con = openConnection();
             $body = file_get_contents('php://input');
             $data = json_decode($body, true);
-            $sql = "UPDATE occupied SET room_id = :room_id, guest_id = :guest_id, voucher_id = :voucher_id, dari_tanggal = :dari_tanggal, sampai_tanggal = :sampai_tanggal, ready_time = :ready_time, checkin_time = :checkin_time, checkout_time = :checkout_time, rate = :rate, group_id = :group_id WHERE occupied_id=:occupied_id;";
+            $sql = "UPDATE occupied SET room_id=:room_id, guest_id=:guest_id, voucher_id=:voucher_id, dari_tanggal=:dari_tanggal, sampai_tanggal=:sampai_tanggal, rate=:rate, group_id=:group_id WHERE occupied_id=:occupied_id and checkout_time is Null;";
+            $stmt = $con->prepare($sql);
+            $stmt->execute(array(
+                ':occupied_id' => $data['occupied_id'],
+                ':room_id' => $data['room_id'],
+                ':guest_id' => $data['guest_id'],
+                ':voucher_id' => $data['voucher_id'],
+                ':dari_tanggal' => $data['dari_tanggal'],
+                ':sampai_tanggal' => $data['sampai_tanggal'],
+                ':rate' => $data['rate'],
+                ':group_id' => $data['group_id'],
+            ));
+
             updateRow($con, $sql, $data);
             $response["status"] = 1;
             $response["message"] = "Ok";

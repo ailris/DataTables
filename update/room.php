@@ -21,13 +21,13 @@ function showUI()
 
     <head>
         <title>Room</title>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="../bootstrap-5.3.2-dist/css/bootstrap.min.css" />
-        <script src="https://code.jquery.com/jquery-3.5.1.js"></script>
-        <script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
-        <script src="../bootstrap-5.3.2-dist/js/bootstrap.bundle.min.js"></script> <!-- Tambahkan ini -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/jquery.dataTables.min.css">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="bootstrap-5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <script src="bootstrap-5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="jquery/jquery-3.7.1.min.js"></script>
+        <link href="DataTables/datatables.min.css" rel="stylesheet">
+        <script src="DataTables/datatables.min.js"></script>
     </head>
 
     <body>
@@ -53,9 +53,10 @@ function showUI()
                                 </div>
                                 <div class="mb-3">
                                     <label for="jenis_kamar" class="form-label">Jenis Kamar</label>
+                                    <!-- <input type="text" class="form-control" id="jenis_kamar"> -->
                                     <select name="jenis_kamar" id="jenis_kamar" class="form-select">
                                         <option value="">Pilih Satu</option>
-                                        <?php
+                                        <!-- <?php
                                         if ($result->num_rows > 0) {
                                             while ($row = $result->fetch_assoc()) {
                                                 echo '<option value="' . $row["jenis_kamar"] . '">' . $row["jenis_kamar"] . '</option>';
@@ -64,7 +65,7 @@ function showUI()
                                             echo "No results";
                                         }
                                         $con->close();
-                                        ?>
+                                        ?> -->
                                     </select>
                                 </div>
                                 <div class="mb-3">
@@ -106,6 +107,18 @@ function showUI()
             </div>
         </div>
     </body>
+    <script>
+        $(document).ready(function() {
+            $.get("SelectOptions.php?flag=jenis_kamar",
+                function(data, status_kamar) {
+                    for (i = 0; i <= data.length; i++) {
+                        $('#jenis_kamar').append('<option value="' + data[i].key + '">' + data[i].value + '</option>');
+                    }
+                }
+            );
+        });
+    </script>
+
     <script>
         $(document).ready(function() {
             var table = $('#example').DataTable({

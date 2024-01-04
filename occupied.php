@@ -24,7 +24,6 @@ function showUI()
         <div class="container m-md-auto">
             <h1 class="text-center">Occupied</h1>
             <!-- Modal -->
-            <!-- Modal -->
             <div class="modal fade" id="myForm" tabindex="-1">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
@@ -90,6 +89,7 @@ function showUI()
                 <table id="example" class="display table table-striped" style="width:100%">
                     <thead>
                         <tr>
+                            <th>Occupied ID</th>
                             <th>Room ID</th>
                             <th>Guest ID</th>
                             <th>Voucher ID</th>
@@ -115,6 +115,9 @@ function showUI()
                         type: 'POST'
                     },
                     columns: [{
+                            data: "occupied_id"
+                        },
+                        {
                             data: "room_id"
                         },
                         {
@@ -140,11 +143,9 @@ function showUI()
                         },
                         {
                             data: "checkin_time"
-                            
                         },
                         {
                             data: "checkout_time"
-                            
                         },
                         {
                             data: "rate"
@@ -154,7 +155,8 @@ function showUI()
                         },
                     ],
                 });
-                var myModal = new bootstrap.Modal(document.getElementById('myForm'), {})
+
+                var myModal = new bootstrap.Modal(document.getElementById('myForm'), {});
 
                 $('#add').click(function() {
                     flag = "add";
@@ -237,7 +239,9 @@ if (isset($_REQUEST["flag"])) {
             $con = openConnection();
             $body = file_get_contents('php://input');
             $data = json_decode($body, true);
-            $sql = "INSERT into occupied(room_id, guest_id, voucher_id, dari_tanggal, sampai_tanggal, rate, group_id) VALUES (:room_id, :guest_id, :voucher_id, :dari_tanggal, :sampai_tanggal, :rate, :group_id);";
+            $sql = "INSERT INTO occupied (room_id, guest_id, voucher_id, dari_tanggal, sampai_tanggal, ready_time, checkin_time, checkout_time, rate, group_id) 
+VALUES (:room_id, :guest_id, :voucher_id, :dari_tanggal, :sampai_tanggal, :ready_time, :checkin_time, :checkout_time, :rate, :group_id);
+";
             createRow($con, $sql, $data);
             $response["status"] = 1;
             $response["message"] = "Ok";
